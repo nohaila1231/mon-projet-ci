@@ -1,0 +1,45 @@
+name: Node.js CI Template
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '18'
+      run-tests:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      
+      - name: Cache npm
+        uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        if: ${{ inputs.run-tests == true }}
+        run: npm test
+      
+      - name: Build
+        run: npm run build
