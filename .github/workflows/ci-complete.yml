@@ -1,0 +1,65 @@
+name: 🚀 Pipeline CI avec paramètres
+
+on:
+  workflow_dispatch:
+    inputs:
+      node-version:
+        description: 'Version de Node.js'
+        required: true
+        default: '18'
+        type: choice
+        options:
+          - '16'
+          - '18'
+          - '20'
+          - '22'
+      run-tests:
+        description: 'Exécuter les tests ?'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Récupération du code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Installation Node.js ${{ github.event.inputs.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ github.event.inputs.node-version }}
+      
+      - name: 💾 Cache npm
+        uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node${{ github.event.inputs.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node${{ github.event.inputs.node-version }}-
+      
+      - name: 📦 Installation des dépendances
+        run: npm ci
+      
+      - name: 🧪 Exécution des tests
+        if: ${{ github.event.inputs.run-tests == 'true' }}
+        run: npm test
+      
+      - name: 🏗️ Build de l'application
+        run: npm run build
+      
+      - name: 📊 Résumé
+        run: |
+          echo "==================================="
+          echo "✅ Pipeline terminé avec succès !"
+          echo "==================================="
+          echo "📦 Node.js version : ${{ github.event.inputs.node-version }}"
+          echo "🧪 Tests exécutés  : ${{ github.event.inputs.run-tests }}"
+          echo "💾 Cache utilisé   : ${{ steps.npm-cache.outputs.cache-hit == 'true' && 'OUI ✅' || 'NON (première fois)' }}"
+          echo "==================================="
